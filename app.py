@@ -6,10 +6,12 @@ from utils.mask import aster_cloud_mask, aster_ndvi_mask, water_mask_ast, trim_e
 from utils.indices import calculate_indices
 import os
 from google.oauth2 import service_account
-from ee import oauth
 
-service_account_keys = st.secrets["ee_keys"]
-credentials = service_account.Credentials.from_service_account_info(service_account_keys,scopes=oauth.SCOPES)
+
+json_data = st.secrets["json_data"]
+service_account = st.secrets["service_account"]
+
+credentials = ee.ServiceAccountCredentials(service_account, key_data=json_data)
 
 
 ee.Initialize(credentials)
