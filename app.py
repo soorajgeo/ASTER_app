@@ -4,7 +4,7 @@ import ee
 from utils.preprocessing import temporal_aster_preprocessing
 from utils.mask import aster_cloud_mask, aster_ndvi_mask, water_mask_ast, trim_edge
 from utils.indices import calculate_indices
-import os
+import requests
 from google.oauth2 import service_account
 
 
@@ -15,8 +15,6 @@ credentials = ee.ServiceAccountCredentials(service_account, key_data=json_data)
 
 
 ee.Initialize(credentials)
-out_dir = os.path.join(os.path.expanduser('~'), 'Downloads')
-
 
 st.set_page_config(layout="wide")
 
@@ -134,16 +132,14 @@ with col1:
         download = st.button('Download', help="Images will be saved in your DOWNLOADS folder")
         if download:
             with st.spinner('Downloading...'):
-                filename = os.path.join(out_dir, index_map.getInfo()['bands'][0]['id']+'.tif')
-                geemap.ee_export_image(
-                    index_map, filename=filename, scale=30, region=st.session_state.area, file_per_band=False
-                )
-                
+                file_name = index_map.getInfo()['bands'][0]['id']
+                file = file_name +'.tif'
+                url = index_map.getDownloadURL({'name': file_name, 'region': st.session_state.area, 'scale': 30, 'format': 'GEO_TIFF'})
+                response = requests.get(url)
+                with open(file, 'wb') as fd:
+                  fd.write(response.content)
+                                
                 st.success('Downloaded', icon="✅")
 
 
     Map.to_streamlit()
-
-  
-  
- 
