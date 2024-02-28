@@ -41,11 +41,11 @@ Map = geemap.Map()
 
 
 if 'selection' not in st.session_state:
-  st.session_state.selection = ['ferric[2/1]','ferrous[(5/3)+(1/2)]','laterite/alteration[4/5]','gossan[4/2]',
-                                'fe-silicates[5/4]','ferric oxide[4/3]','carb-chl-epi[(7+9)/8]','epi-chl-amp[(6+9)/(7+8)]',
-                                'MgOH[(6+9)/8]','amphibole[6/8]','dolomite[(6+8)/7]','carbonate[13/14]','seri-mus-smec[(5+7)/6]',
-                                'alun-kaol-pyro[(4+6)/5]','phengite[5/6]','muscovite[7/6]','kaolinite[7/5]','clay[(5*7)/(6*6)]',
-                                'quartz rich[14/12]','silica1[(11*11)/(10/12)]','silica2[13/10]','BDI[12/13]','SiO2[13/12]'
+  st.session_state.selection = ['ferric[2/1]','ferrous[(5/3)+(1/2)]','alteration[4/5]','gossan[4/2]',
+                                'fe_silicates[5/4]','ferric_oxide[4/3]','carb_chl_epi[(7+9)/8]','epi_chl_amp[(6+9)/(7+8)]',
+                                'MgOH[(6+9)/8]','amphibole[6/8]','dolomite[(6+8)/7]','carbonate[13/14]','seri_mus_smec[(5+7)/6]',
+                                'alun_kaol_pyro[(4+6)/5]','phengite[5/6]','muscovite[7/6]','kaolinite[7/5]','clay[(5*7)/(6*6)]',
+                                'quartz_rich[14/12]','silica1[(11*11)/(10/12)]','silica2[13/10]','BDI[12/13]','SiO2[13/12]'
                                 ]
   
 
@@ -56,7 +56,11 @@ if 'masked_img' not in st.session_state:
     st.session_state.masked_img = None
 
 
-  
+@st.cache_data()
+def export_image(_image, filename, scale, _area):
+    return geemap.ee_export_image(_image, filename=filename, scale=scale, region=_area, file_per_band=False)
+
+
 col1, col2 = st.columns([4,1])
 
 
@@ -128,18 +132,14 @@ with col1:
             with st.spinner('Calculating indices...'):
                 index_map = calculate_indices(st.session_state.masked_img, index)
                 Map.addLayer(index_map, {'min':min, 'max':max}, index)
-        
-        download = st.button('Download', help="Images will be saved in your DOWNLOADS folder")
-        if download:
-            with st.spinner('Downloading...'):
-                file_name = index_map.getInfo()['bands'][0]['id']
-                file = file_name +'.tif'
-                url = index_map.getDownloadURL({'name': file_name, 'region': st.session_state.area, 'scale': 30, 'format': 'GEO_TIFF'})
-                response = requests.get(url)
-                with open(file, 'wb') as fd:
-                  fd.write(response.content)
-                                
-                st.success('Downloaded', icon="✅")
-
-
+                file_name = index_map.getInfo()['bands'][0]['id']+'.tif'
+                image = export_image(index_map,file_name, 30, st.session_state.area)
+                
+       
+        if index is not None:
+            file_name = index.split('[')[0]+'.tif'
+            with open(file_name, 'rb') as fd:
+                st.download_button('Download',fd,file_name=file_name, mime = "image/tiff")
+                        
+                
     Map.to_streamlit()

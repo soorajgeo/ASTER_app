@@ -16,11 +16,11 @@ def calculate_indices(image, index):
     
     return ferrous
   
-  elif index == 'laterite/alteration[4/5]':
+  elif index == 'alteration[4/5]':
     laterite = image.expression('B4/B5',{
           'B4': image.select('B04'),
           'B5': image.select('B05'),
-          }).rename('laterite')
+          }).rename('alteration')
     
     return laterite
   
@@ -32,38 +32,38 @@ def calculate_indices(image, index):
     
     return gossan
   
-  elif index == 'fe-silicates[5/4]':
+  elif index == 'fe_silicates[5/4]':
     fesilicate = image.expression('B5/B4',{
           'B4': image.select('B04'),
           'B5': image.select('B05'),
-          }).rename('fesilicate')
+          }).rename('fe_silicates')
     
     return fesilicate
   
-  elif index == 'ferric oxide[4/3]':
+  elif index == 'ferric_oxide[4/3]':
     feoxide = image.expression('B4/B3',{
           'B3': image.select('B3N'),
           'B4': image.select('B04'),
-          }).rename('feoxide')
+          }).rename('ferric_oxide')
     
     return feoxide
   
-  elif index == 'carb-chl-epi[(7+9)/8]':
+  elif index == 'carb_chl_epi[(7+9)/8]':
     carchlepi = image.expression('(B7+B9)/B8',{
           'B7': image.select('B07'),
           'B8': image.select('B08'),
           'B9': image.select('B09'),
-          }).rename('carchlepi')
+          }).rename('carb_chl_epi')
     
     return carchlepi
   
-  elif index == 'epi-chl-amp[(6+9)/(7+8)]':
+  elif index == 'epi_chl_amp[(6+9)/(7+8)]':
     epichlamp = image.expression('(B6+B9)/(B7+B8)',{
           'B6': image.select('B06'),
           'B7': image.select('B07'),
           'B8': image.select('B08'),
           'B9': image.select('B09'),
-          }).rename('epichlamp')
+          }).rename('epi_chl_amp')
     
     return epichlamp
   
@@ -72,7 +72,7 @@ def calculate_indices(image, index):
           'B6': image.select('B06'),
           'B8': image.select('B08'),
           'B9': image.select('B09'),
-          }).rename('mgoh')
+          }).rename('MgOH')
     
     return mgoh
   
@@ -80,7 +80,7 @@ def calculate_indices(image, index):
     amphi = image.expression('B6/B8',{
           'B6': image.select('B06'),
           'B8': image.select('B08'),
-          }).rename('amphi')
+          }).rename('amphibole')
     
     return amphi
   
@@ -101,21 +101,21 @@ def calculate_indices(image, index):
     
     return carbonate
   
-  elif index == 'seri-mus-smec[(5+7)/6]':
+  elif index == 'seri_mus_smec[(5+7)/6]':
     sermusmec = image.expression('(B5+B7)/B6',{
           'B5': image.select('B05'),
           'B6': image.select('B06'),
           'B7': image.select('B07'),
-          }).rename('sermusmec')
+          }).rename('seri_mus_smec')
     
     return sermusmec
   
-  elif index == 'alun-kaol-pyro[(4+6)/5]':
+  elif index == 'alun_kaol_pyro[(4+6)/5]':
     alukaopyro = image.expression('(B4+B6)/B5',{
           'B4': image.select('B04'),
           'B5': image.select('B05'),
           'B6': image.select('B06'),
-          }).rename('alukaopyro')
+          }).rename('alun_kaol_pyro')
     
     return alukaopyro
   
@@ -153,12 +153,12 @@ def calculate_indices(image, index):
     
     return clay
   
-  elif index == 'quartz rich[14/12]':
+  elif index == 'quartz_rich[14/12]':
     quartz = image.expression('B14/B12',{
           'B12': image.select('B12'),
           'B14': image.select('B14'),
           'B7': image.select('B07'),
-      }).rename('quartz')
+      }).rename('quartz_rich')
     
     return quartz
   
