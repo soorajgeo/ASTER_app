@@ -4,7 +4,6 @@ import ee
 from utils.preprocessing import temporal_aster_preprocessing
 from utils.mask import aster_cloud_mask, aster_ndvi_mask, water_mask_ast, trim_edge
 from utils.indices import calculate_indices
-import requests
 from google.oauth2 import service_account
 
 
@@ -23,7 +22,7 @@ st.title("ASTER app")
 
 st.markdown(
     """
-    This app helps to generate mineral indices map with ASTER_L1T data and is deployed using [streamlit](https://streamlit.io) and [geemap](https://geemap.org). It is an open-source project and you are very welcome to check the [GitHub repository](https://github.com/soorajgeo/ASTER_app).
+    This app helps to generate mineral indices map with ASTER_L1T data and is deployed using [streamlit](https://streamlit.io) and [geemap](https://geemap.org). It is an open-source project and you are very welcome to check my [GitHub repository](https://github.com/soorajgeo/ASTER_app) for detailed information and demo.
     """
 )
 
@@ -56,7 +55,7 @@ if 'masked_img' not in st.session_state:
     st.session_state.masked_img = None
 
 
-@st.cache_data()
+@st.cache_data(show_spinner=False)
 def export_image(_image, filename, scale, _area):
     return geemap.ee_export_image(_image, filename=filename, scale=scale, region=_area, file_per_band=False)
 
@@ -68,7 +67,7 @@ with col1:
     Map.add_basemap('HYBRID')
     if "area" in st.session_state:
         Map.addLayer(st.session_state.area, {}, 'area', opacity=0.5)
-        Map.setCenter((st.session_state.minx+st.session_state.maxx)/2, (st.session_state.miny+st.session_state.maxy)/2 )
+        Map.setCenter((st.session_state.minx+st.session_state.maxx)/2, (st.session_state.miny+st.session_state.maxy)/2, zoom=11)
 
     vis_params = {'bands':['B05', 'B04', 'B3N'], 'min':0, 'max':0.5}
 
@@ -97,9 +96,9 @@ with col1:
                 st.stop()
             st.session_state.area = area
             Map.addLayer(area, {}, 'area', opacity=0.5)
-            Map.setCenter((st.session_state.minx+st.session_state.maxx)/2, (st.session_state.miny+st.session_state.maxy)/2 )
+            Map.setCenter((st.session_state.minx+st.session_state.maxx)/2, (st.session_state.miny+st.session_state.maxy)/2,zoom=11)
     
-        st.number_input("Trim distance", value=100, help='Enter distance by which ASTER images will be cropped to avoid errors at scene edges', key='trim')
+        st.number_input("Trim distance", value=100, min_value=1, help='Distance (try values between 100-1000) by which ASTER scenes will be cropped to avoid lines in the final output image', key='trim')
 
         button_click = st.button("Submit", help='Click to see the processed imagery')
 
@@ -110,7 +109,7 @@ with col1:
                 Map.addLayer(st.session_state.temp_image, vis_params, 'Processed image')
 
         with st.form(key='NDVI form'):
-            st.number_input("NDVI mask ", value=1.0, help="If you do not want to mask vegetation, enter 1, otherwise enter values between 0 and 1", key='vegmask')
+            st.number_input("NDVI mask ", value=1.0, min_value=0.2, max_value=1.0, help="If you do not want to mask vegetation, enter 1, otherwise try values between 0.5 and 1", key='vegmask')
             
             
             submit = st.form_submit_button('Submit', help='Click to see the NDVI masked image')
@@ -119,12 +118,12 @@ with col1:
             with st.spinner('Applying NDVI mask...'):
                 ndvi_mask = aster_ndvi_mask(st.session_state.temp_image, st.session_state.vegmask)
                 st.session_state.masked_img = ndvi_mask
-                Map.addLayer(ndvi_mask, vis_params, "Masked")
+                Map.addLayer(ndvi_mask, vis_params, "NDVI Masked")
 
-        st.write("Enter min and max values for visualisation")
+        st.write("Enter min and max values OR skip this step to download the selected indices and view in any GIS software.")
         c5, c6 = st.columns(2)
-        min = c5.number_input("Max",value=0.0,min_value=0.0,max_value=10.0, step=1., placeholder='min',label_visibility='collapsed',key='min')
-        max = c6.number_input("Min",value=1.0,min_value=0.0,max_value=10.0, step=1., placeholder='max',label_visibility='collapsed',key='max')
+        min = c5.number_input("Min",value=0.0,min_value=0.0,max_value=10.0, step=1., placeholder='min',key='min')
+        max = c6.number_input("Max",value=1.0,min_value=0.0,max_value=10.0, step=1., placeholder='max',key='max')
 
         index = st.selectbox('Select the indices', options=st.session_state.selection, placeholder="Select indices",
                          label_visibility='collapsed',index=None)
