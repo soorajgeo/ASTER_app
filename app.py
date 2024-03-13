@@ -1,6 +1,7 @@
 import streamlit as st
 import geemap.foliumap as geemap
 import ee
+import requests
 from utils.preprocessing import temporal_aster_preprocessing
 from utils.mask import aster_cloud_mask, aster_ndvi_mask, water_mask_ast, trim_edge
 from utils.indices import calculate_indices
@@ -41,7 +42,7 @@ Map = geemap.Map()
 
 if 'selection' not in st.session_state:
   st.session_state.selection = ['ferric[2/1]','ferrous[(5/3)+(1/2)]','alteration[4/5]','gossan[4/2]',
-                                'fe_silicates[5/4]','ferric_oxide[4/3]','carb_chl_epi[(7+9)/8]','epi_chl_amp[(6+9)/(7+8)]',
+                                'fe_silicates[5/4]','ferric_oxide[4/3]','carb_chl_epi[(7+9)/8]','epi-chl-amp[(6+9)/(7+8)]',
                                 'MgOH[(6+9)/8]','amphibole[6/8]','dolomite[(6+8)/7]','carbonate[13/14]','seri_mus_smec[(5+7)/6]',
                                 'alun_kaol_pyro[(4+6)/5]','phengite[5/6]','muscovite[7/6]','kaolinite[7/5]','clay[(5*7)/(6*6)]',
                                 'quartz_rich[14/12]','silica1[(11*11)/(10/12)]','silica2[13/10]','BDI[12/13]','SiO2[13/12]'
@@ -55,9 +56,25 @@ if 'masked_img' not in st.session_state:
     st.session_state.masked_img = None
 
 
-@st.cache_data(show_spinner=False)
+@st.cache_data(show_spinner=False,persist="disk")
 def export_image(_image, filename, scale, _area):
-    return geemap.ee_export_image(_image, filename=filename, scale=scale, region=_area, file_per_band=False)
+    url = _image.getDownloadUrl({
+                    'scale': scale,
+                    'crs': 'EPSG:4326',
+                    'region': _area,
+                    'format': 'GEO_TIFF'
+                })
+    response = requests.get(url)
+    
+    if response.status_code == 400:
+        st.error("User memory limit exceeded. Clear the above select box and rerun using decreased resolution")
+        st.cache_data.clear()
+        st.stop()
+    else:
+        with open(filename, 'wb') as fd:
+            fd.write(response.content)
+            
+    
 
 
 col1, col2 = st.columns([4,1])
@@ -67,7 +84,8 @@ with col1:
     Map.add_basemap('HYBRID')
     if "area" in st.session_state:
         Map.addLayer(st.session_state.area, {}, 'area', opacity=0.5)
-        Map.setCenter((st.session_state.minx+st.session_state.maxx)/2, (st.session_state.miny+st.session_state.maxy)/2, zoom=11)
+        Map.setCenter((st.session_state.minx+st.session_state.maxx)/2, (st.session_state.miny+st.session_state.maxy)/2, zoom=11 )
+        
 
     vis_params = {'bands':['B05', 'B04', 'B3N'], 'min':0, 'max':0.5}
 
@@ -96,7 +114,7 @@ with col1:
                 st.stop()
             st.session_state.area = area
             Map.addLayer(area, {}, 'area', opacity=0.5)
-            Map.setCenter((st.session_state.minx+st.session_state.maxx)/2, (st.session_state.miny+st.session_state.maxy)/2,zoom=11)
+            Map.setCenter((st.session_state.minx+st.session_state.maxx)/2, (st.session_state.miny+st.session_state.maxy)/2, zoom=11)
     
         st.number_input("Trim distance", value=100, min_value=1, help='Distance (try values between 100-1000) by which ASTER scenes will be cropped to avoid lines in the final output image', key='trim')
 
@@ -125,20 +143,29 @@ with col1:
         min = c5.number_input("Min",value=0.0,min_value=0.0,max_value=10.0, step=1., placeholder='min',key='min')
         max = c6.number_input("Max",value=1.0,min_value=0.0,max_value=10.0, step=1., placeholder='max',key='max')
 
+        scale = st.number_input(label="Enter resolution of image to download (30-90)", value=30, min_value=30, max_value=90, key='scale')
+
         index = st.selectbox('Select the indices', options=st.session_state.selection, placeholder="Select indices",
                          label_visibility='collapsed',index=None)
+        
+
         if index:
             with st.spinner('Calculating indices...'):
                 index_map = calculate_indices(st.session_state.masked_img, index)
                 Map.addLayer(index_map, {'min':min, 'max':max}, index)
                 file_name = index_map.getInfo()['bands'][0]['id']+'.tif'
-                image = export_image(index_map,file_name, 30, st.session_state.area)
                 
-       
+                image = export_image(index_map,file_name, st.session_state.scale, st.session_state.area)
+                
+      
         if index is not None:
             file_name = index.split('[')[0]+'.tif'
-            with open(file_name, 'rb') as fd:
-                st.download_button('Download',fd,file_name=file_name, mime = "image/tiff")
+            try:
+                with open(file_name, 'rb') as fd:
+                    st.download_button('Download',fd,file_name=file_name, mime = "image/tiff")
+            except:
+                st.error("There seems to be an error. Refresh the page")
+                st.stop()
                         
                 
     Map.to_streamlit()

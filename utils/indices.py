@@ -57,15 +57,15 @@ def calculate_indices(image, index):
     
     return carchlepi
   
-  elif index == 'epi_chl_amp[(6+9)/(7+8)]':
-    epichlamp = image.expression('(B6+B9)/(B7+B8)',{
+  elif index == 'epi-chl-amp[(6+9)/(7+8)]':
+    epidote = image.expression('(B6+B9)/(B7+B8)',{
           'B6': image.select('B06'),
           'B7': image.select('B07'),
           'B8': image.select('B08'),
           'B9': image.select('B09'),
-          }).rename('epi_chl_amp')
+          }).rename('epi-chl-amp')
     
-    return epichlamp
+    return epidote
   
   elif index == 'MgOH[(6+9)/8]':
     mgoh = image.expression('(B6+B9)/B8',{
