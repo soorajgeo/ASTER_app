@@ -56,8 +56,8 @@ if 'masked_img' not in st.session_state:
     st.session_state.masked_img = None
 
 
-@st.cache_data(show_spinner=False,persist="disk")
-def export_image(_image, filename, scale, _area):
+@st.cache_data(show_spinner=False)
+def export_image(_image, filename, scale, _area, trim, ndvi):
     url = _image.getDownloadUrl({
                     'scale': scale,
                     'crs': 'EPSG:4326',
@@ -85,9 +85,11 @@ with col1:
     if "area" in st.session_state:
         Map.addLayer(st.session_state.area, {}, 'area', opacity=0.5)
         Map.setCenter((st.session_state.minx+st.session_state.maxx)/2, (st.session_state.miny+st.session_state.maxy)/2, zoom=11 )
-        
 
     vis_params = {'bands':['B05', 'B04', 'B3N'], 'min':0, 'max':0.5}
+
+
+    
 
     with col2:    
         with st.form(key='latlong form'):
@@ -143,8 +145,9 @@ with col1:
         min = c5.number_input("Min",value=0.0,min_value=0.0,max_value=10.0, step=1., placeholder='min',key='min')
         max = c6.number_input("Max",value=1.0,min_value=0.0,max_value=10.0, step=1., placeholder='max',key='max')
 
-        scale = st.number_input(label="Enter resolution of image to download (30-90)", value=30, min_value=30, max_value=90, key='scale')
+        scale = st.number_input(label="Enter resolution of image to download (30-90)", value=30.0, min_value=30.0, max_value=90.0, key='scale')
 
+        st.info('Please make sure to clear the values in the box below if you want to repeat any of the above steps', icon="🚨")
         index = st.selectbox('Select the indices', options=st.session_state.selection, placeholder="Select indices",
                          label_visibility='collapsed',index=None)
         
@@ -155,7 +158,7 @@ with col1:
                 Map.addLayer(index_map, {'min':min, 'max':max}, index)
                 file_name = index_map.getInfo()['bands'][0]['id']+'.tif'
                 
-                image = export_image(index_map,file_name, st.session_state.scale, st.session_state.area)
+                image = export_image(index_map,file_name, st.session_state.scale, st.session_state.area, st.session_state.trim, st.session_state.vegmask)
                 
       
         if index is not None:
