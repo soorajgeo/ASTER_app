@@ -67,7 +67,7 @@ def export_image(_image, filename, scale, _area, trim, ndvi):
     response = requests.get(url)
     
     if response.status_code == 400:
-        st.error("User memory limit exceeded. Clear the above select box and rerun using decreased resolution")
+        st.error("User memory limit exceeded. Clear the values in the above select box, press Clear cache button and rerun using decreased resolution")
         st.cache_data.clear()
         st.stop()
     else:
@@ -147,7 +147,7 @@ with col1:
 
         scale = st.number_input(label="Enter resolution of image to download (30-90)", value=30.0, min_value=30.0, max_value=90.0, key='scale')
 
-        st.info('Please make sure to clear the values in the box below if you want to repeat any of the above steps', icon="🚨")
+        st.info('Please make sure to clear the values in the box below and press Clear Cache button if you want to experiment with trim distance and NDVI mask', icon="🚨")
         index = st.selectbox('Select the indices', options=st.session_state.selection, placeholder="Select indices",
                          label_visibility='collapsed',index=None)
         
@@ -166,9 +166,14 @@ with col1:
             try:
                 with open(file_name, 'rb') as fd:
                     st.download_button('Download',fd,file_name=file_name, mime = "image/tiff")
+                    
             except:
                 st.error("There seems to be an error. Refresh the page")
                 st.stop()
-                        
-                
+
+        if st.button("Clear cache"):
+            # Clear values from *all* all in-memory and on-disk data caches:
+            export_image.clear()
+            
+              
     Map.to_streamlit()
