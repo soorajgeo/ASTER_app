@@ -33,6 +33,7 @@ markdown = """
 1. Mineral indices used in the app is available in this [pdf](https://aslenv.com/assets/files/ASTER_Processing_for_Mineral_Exploration.pdf) 
 2. The preprocessing of ASTER images were done using the github repo [ASTER_preprocessing](https://github.com/Mining-for-the-Future/ASTER_preprocessing) 
 3. Indices can be calculated only for areas less than 800 sq.km. Please provide the bounding coordinates accordingly
+4. Final mineral indices map generated will be mostly displayed as a white image. Download the image and view in any GIS software
 
 """
 
@@ -55,7 +56,6 @@ if 'temp_image' not in st.session_state:
 if 'masked_img' not in st.session_state:
     st.session_state.masked_img = None
 
-
 @st.cache_data(show_spinner=False)
 def export_image(_image, filename, scale, _area, trim, ndvi):
     url = _image.getDownloadUrl({
@@ -75,8 +75,6 @@ def export_image(_image, filename, scale, _area, trim, ndvi):
             fd.write(response.content)
             
     
-
-
 col1, col2 = st.columns([4,1])
 
 
@@ -88,9 +86,7 @@ with col1:
 
     vis_params = {'bands':['B05', 'B04', 'B3N'], 'min':0, 'max':0.5}
 
-
     
-
     with col2:    
         with st.form(key='latlong form'):
             st.write("Enter bounding coordinates in decimal degrees")
@@ -118,7 +114,7 @@ with col1:
             Map.addLayer(area, {}, 'area', opacity=0.5)
             Map.setCenter((st.session_state.minx+st.session_state.maxx)/2, (st.session_state.miny+st.session_state.maxy)/2, zoom=11)
     
-        st.number_input("Trim distance", value=100, min_value=1, help='Distance (try values between 100-1000) by which ASTER scenes will be cropped to avoid lines in the final output image', key='trim')
+        st.number_input("Enter trim distance to preprocess imagery", value=50, min_value=1, help='Distance (try values above 50) by which ASTER scenes will be cropped to avoid lines in the final output image', key='trim')
 
         button_click = st.button("Submit", help='Click to see the processed imagery')
 
@@ -127,7 +123,7 @@ with col1:
                 image = temporal_aster_preprocessing(st.session_state.area, st.session_state.trim)
                 st.session_state.temp_image = image['imagery']
                 Map.addLayer(st.session_state.temp_image, vis_params, 'Processed image')
-
+        
         with st.form(key='NDVI form'):
             st.number_input("NDVI mask ", value=1.0, min_value=0.2, max_value=1.0, help="If you do not want to mask vegetation, enter 1, otherwise try values between 0.5 and 1", key='vegmask')
             
@@ -140,27 +136,21 @@ with col1:
                 st.session_state.masked_img = ndvi_mask
                 Map.addLayer(ndvi_mask, vis_params, "NDVI Masked")
 
-        st.write("Enter min and max values OR skip this step to download the selected indices and view in any GIS software.")
-        c5, c6 = st.columns(2)
-        min = c5.number_input("Min",value=0.0,min_value=0.0,max_value=10.0, step=1., placeholder='min',key='min')
-        max = c6.number_input("Max",value=1.0,min_value=0.0,max_value=10.0, step=1., placeholder='max',key='max')
-
         scale = st.number_input(label="Enter resolution of image to download (30-90)", value=30.0, min_value=30.0, max_value=90.0, key='scale')
 
-        st.info('Please make sure to clear the values in the box below and press Clear Cache button if you want to experiment with trim distance and NDVI mask', icon="🚨")
+        st.info('Please make sure to clear the values in the drop down box below and also press Clear Cache button if you want to re-run with trim distance and NDVI mask', icon="🚨")
         index = st.selectbox('Select the indices', options=st.session_state.selection, placeholder="Select indices",
                          label_visibility='collapsed',index=None)
         
-
         if index:
             with st.spinner('Calculating indices...'):
                 index_map = calculate_indices(st.session_state.masked_img, index)
-                Map.addLayer(index_map, {'min':min, 'max':max}, index)
+                Map.addLayer(index_map, {'min':0, 'max':1}, index)
                 file_name = index_map.getInfo()['bands'][0]['id']+'.tif'
                 
                 image = export_image(index_map,file_name, st.session_state.scale, st.session_state.area, st.session_state.trim, st.session_state.vegmask)
                 
-      
+              
         if index is not None:
             file_name = index.split('[')[0]+'.tif'
             try:
